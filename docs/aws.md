@@ -100,3 +100,34 @@ python manage.py compilescss
 python manage.py collectstatic --no-input -i '*.scss'
 sudo systemctl restart gunicorn
 ```
+
+### SSL 化
+
+**注**: ドメインを取得している必要がある．
+
+```console
+$ sudo apt-get install -y certbot python3-certbot-nginx
+$ sudo certbot --nginx
+```
+
+Certbotが起動して，対話形式でSSL化することができる．
+
+### Basic 認証
+
+Basic 認証に必要なファイルを作成する:
+
+```console
+$ echo "<ユーザー名>:$(openssl passwd -apr1 <パスワード>)" | sudo tee /path/to/basicauth/userfile
+$ chmod a-wx /path/to/basicauth/userfile
+```
+
+Nginx の設定:
+
+```nginx
+server {
+  ...
+  auth_basic "<クライアントに伝えるメッセージ>";
+  auth_basic_user_file /path/to/basicauth/userfile;
+  ...
+}
+```
