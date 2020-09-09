@@ -5,6 +5,7 @@
 必要なパッケージをインストールする:
 
 ```console
+$ sudo apt-get update
 $ sudo apt-get install -y build-essential python3 python3-venv python3-dev nginx
 ```
 
