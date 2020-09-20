@@ -61,7 +61,7 @@ $ sudo systemctl restart nginx
 
   ```nginx
   server {
-    server_name <domain>;
+    server_name <domain or IP address>;
     listen 80;
 
     proxy_set_header Host $host;
