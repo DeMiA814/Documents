@@ -69,12 +69,19 @@ $ sudo systemctl restart nginx
     proxy_set_header X-Forwarded-Proto $scheme;
     proxy_set_header X-Real-IP $remote_addr;
 
+    # favicon へのリクエストをログに残さない
+    location = /favicon.ico {
+      access_log off;
+      log_not_found off;
+    }
     location / {
       proxy_redirect off;
       proxy_pass http://localhost:8000;
     }
     location /static {
       alias /home/ubuntu/<app_name>/staticfiles/;
+      access_log off;
+      add_header Cache-Control "public; max_age=2592000; must-revalidate";
     }
     # 必要に応じて
     location /media {
