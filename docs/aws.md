@@ -26,7 +26,7 @@
 サーバでは Poetry を使えないため，Pip で依存パッケージをインストールできるように `requirements.txt` を生成しておく:
 
 ```console
-$ poetry export --no-hashes > requirements.txt
+$ poetry export --without-hashes > requirements.txt
 ```
 
 **NOTE**: `--no-hashes` オプションはなくても構わないが，`requirements.txt` のサイズは大きくなる．
