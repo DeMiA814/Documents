@@ -35,6 +35,7 @@
 - Djangoの標準機能で実装できる
   - [django公式](https://docs.djangoproject.com/en/3.1/ref/contrib/sitemaps/)
   - [sitemap公式](https://www.sitemaps.org/ja/protocol.html)
+- 本番ではデフォルトで、example.com が入っているので、adminからドメインを変更する。
 
 ## robots.txtの設定
 - indexされたくないものをDisallowに追加する。
