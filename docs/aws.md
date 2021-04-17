@@ -96,7 +96,7 @@ After=network.target
 User=ubuntu
 Group=www-data
 WorkingDirectory=/home/ubuntu/"プロジェクト名"
-Environment=DJANGO_SETTING_MODULE="プロジェクト名.settings.production"
+Environment=DJANGO_SETTINGS_MODULE="プロジェクト名.settings.production"
 ExecStart=/home/ubuntu/"プロジェクト名"/.venv/bin/gunicorn --access-logfile - --bind=0.0.0.0:8000 "プロジェクト名".wsgi:application
 
 [Install]
@@ -223,4 +223,26 @@ sudo systemctl restart gunicorn
 
 ```console
 $ sh "スクリプト名"
+```
+
+### 複数の人が SSH ログインできるようにする
+
+**NOTE**: 複数人が同時に SSH ログインしないように注意する．
+
+#### キーペアの作成
+
+ログインしたい人がキーペアを作成する:
+
+```console
+$ ssh-keygen -t ed25519 -f "鍵のファイル名" # ローカル環境で
+```
+
+例えば，鍵のファイル名を `foo` とすると，`foo` という名前の秘密鍵と `foo.pub` という
+
+#### 公開鍵の追加
+
+すでにログインできる人が `.pub` ファイルを受け取り，ファイルの内容全体をコピーし，SSH 環境の `~/.ssh/authorized_keys` に内容を追記する:
+
+```console
+$ echo 'コピーした内容' >> ~/.ssh/authorized_keys
 ```
