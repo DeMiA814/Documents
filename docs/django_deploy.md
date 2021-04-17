@@ -29,7 +29,7 @@
 </div>
 ```
 
-- 503.htmlは、myapp/templates/503.htmlに配置(templates直下が大事)
+- 503.htmlは、[project_root]/templates/503.htmlに配置(templates直下が大事)
 
 ## サイトマップの設定
 - Djangoの標準機能で実装できる
@@ -102,29 +102,5 @@ LOGGING = {
 - 500.html
 - 503.html
 
-### [project_name]/urls.py
-```python
-handler404 = "main.views.error404"
-handler500 = "main.views.error500"
-handler403 = "main.views.error403"
-handler400 = "main.views.error400"
-```
-
-### views.py
-```python
-def error404(request, exception):
-    return render(request, "main/error404.html")
-
-
-def error500(request):
-    return render(request, "main/error500.html")
-
-
-def error403(request, exception):
-    return render(request, "main/error403.html")
-
-
-def error400(request, exception):
-    return render(request, "main/error400.html")
-```
+すべてプロジェクト直下のtemplates直下に配置する
 
