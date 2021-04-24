@@ -213,7 +213,7 @@ server {
 set -e
 cd ~/"プロジェクト名"
 git pull origin "ブランチ名"
-source ./.venv/bin/activate
+. ./.venv/bin/activate
 pip install -U -r requirements.txt --no-cache
 python manage.py compilescss
 python manage.py collectstatic --no-input -i '*.scss'
