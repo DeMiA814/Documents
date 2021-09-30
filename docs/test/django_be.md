@@ -150,7 +150,6 @@ class CustomUserCreationForm(UserCreationForm):
         cleaned_data = super().clean()
         name = cleaned_data.get('username')
         if len(name) < 2:
-            self.error_messages['username'] = '名前は2文字以上にしてください'
             raise ValidationError('名前は2文字以上にしてください')
         if not name[-2:] == '太郎':
             raise ValidationError('末尾は"太郎"で終わってください')
