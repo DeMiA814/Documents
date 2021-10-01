@@ -294,7 +294,7 @@ class SignupTests(TestCase):
 
 class LoginTests(TestCase):
     def setUp(self):
-        self.existing_user = User(username="exisiting太郎")
+        self.existing_user = User(username="existing太郎")
         self.existing_user.set_password("thisistest")
         self.existing_user.save()
 
@@ -380,7 +380,7 @@ class BlogViewTests(TestCase, BlogViewTestsMixin):
             self.assertContains(res, f"ブログ{i}")
 ```
 
-#### _views/test_base.py_
+#### _views/base.py_
 
 ```python
 from myapp.models import User
