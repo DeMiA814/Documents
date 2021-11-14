@@ -76,4 +76,10 @@ key = key.pemの絶対パス
 TIMEOUTclose = 0
 ```
 
+stunnel を起動:
+
+```console
+$ stunnel stunnel.conf
+```
+
 これで，`127.0.0.1:8000` がサーバになっているときに，[https://127.0.0.1:8001](https://127.0.0.1:8001) にアクセスできるようになる．
