@@ -360,7 +360,7 @@ fake = Faker("ja_JP")
 class BlogViewTestsMixin(TestsWithAuthMixin):
     @classmethod
     def setup_test_data(cls):
-        super().setup_test_data()
+        super().setUpAuthData()
         for i in range(10):
             Blog.objects.create(user=cls.user, title=f"ブログ{i}", content=fake.text())
 
@@ -386,17 +386,23 @@ class BlogViewTests(TestCase, BlogViewTestsMixin):
 from myapp.models import User
 
 class TestsWithAuthMixin:
+    """
+    ログインが必要なテストクラスで継承する
+    """
+
     @classmethod
-    def setup_test_data(cls):
+    def setUpAuthData(cls):
         cls._username = "test太郎"
-        cls._email = "test@test.com"
+        cls._email = "test@example.com"
         cls._password = "thisistest"
         cls.user = User.objects.create_user(
             username=cls._username, email=cls._email, password=cls._password
         )
 
     def login(self):
-        return self.client.login(username=self._username, password=self._password)
+        return self.client.login(
+            username=self._username, password=self._password
+        )
 
 ```
 
