@@ -343,6 +343,7 @@ after.shは以下のようになります。
 ```
 #!/bin/bash
 cd /home/ubuntu/intern-aws
+sudo chown -R $USER postgres_data
 docker-compose up --build -d
 ```
 migrateやcollectstaticはコンテナ起動時に自動的に走るように設定してあるので今回はこれだけですが、コンテナを使用しない場合はそれらの処理はここで呼び出すことになります。
