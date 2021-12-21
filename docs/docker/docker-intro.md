@@ -160,7 +160,7 @@ services:
 			- ./postgres_data:/var/lib/postgresql/data
 		user:  ${POSTGRES_USER}
 		healthcheck:
-			test:  /usr/bin/pg_isready
+			test:  ["CMD-SHELL", "pg_isready -U postgres"]
 			interval:  10s
 			timeout:  5s
 			retries:  5
@@ -210,6 +210,7 @@ server  {
 	listen  80;
 	location  /  {
 		proxy_pass http://application;
+		proxy_set_header X-Forwarded-Proto $scheme;
 		proxy_set_header  X-Forwarded-For $proxy_add_x_forwarded_for;
 		proxy_set_header Host  $host;
 		proxy_redirect off;
@@ -234,7 +235,7 @@ services:
 		volumes:
 			- ./staticfiles:/staticfiles
 			- ./media:/media
-			- ./nginx/nginx.conf:/etc/nginx/conf.d/nginx.conf
+			- ./nginx:/etc/nginx/conf.d
 		ports:
 			- 80:80
 		depends_on:
