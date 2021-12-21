@@ -72,7 +72,26 @@ DATABASES  = {
 	}
 }
 ```
-なお、これはテストにPostgresを使う場合の例ですので、SQLiteで構わないという場合は
+同様にproduction.pyを作成して以下を記述し、
+```
+from  .settings import  *
+import os
+import environ
+
+env = environ.Env()
+env.read_env(os.path.join(BASE_DIR,  ".env"))
+DATABASES  = {
+	"default": {
+		"ENGINE":  "django.db.backends.postgresql",
+		"NAME":  env("POSTGRES_DB"),
+		"USER":  env("POSTGRES_USER"),
+		"PASSWORD":  env("POSTGRES_PASSWORD"),
+		"HOST":  "db",
+		"PORT":  5432,
+	}
+}
+```
+settings.pyのDATABASEを以下に変更します。
 ```
 DATABASES  =  {
 		'default':  {
@@ -81,8 +100,7 @@ DATABASES  =  {
 	}
 }
 ```
-と設定してください。
-settings.pyのBASE_DIRを`BASE_DIR  =  Path(__file__).resolve(strict=True).parent.parent.parent`に、wsgi.pyとmanage.pyの読み込む設定ファイルを`os.environ.setdefault('DJANGO_SETTINGS_MODULE',  'intern.settings.settings')`に変更すればテストを実行できる形になりました。
+settings.pyのBASE_DIRを`BASE_DIR  =  Path(__file__).resolve(strict=True).parent.parent.parent`に、wsgi.pyとmanage.pyの読み込む設定ファイルを`os.environ.setdefault('DJANGO_SETTINGS_MODULE',  'intern.settings.production')`に変更すれば、本番環境の設定で実行できるようになりました。
 
 つぎに、Actionsで作成したyamlを修正します。
 このyamlファイルにはdocker-composeと同じ文法でコンテナを用意できるので、これを利用してPostgresコンテナを作成します。
@@ -177,3 +195,157 @@ POSTGRES_INITDB_ARGS="--auth-host=md5"
 ```
 ここまでできたらpushしてみてください、Actionsから自動でデプロイができたのが確認できたと思います。これ以降は、指定した本番環境ブランチにmergeかpushがあるたびにテストが走り、それが通れば自動でサーバーに反映されることになります。
 
+## AWS CodePipeline, CodeBuild, CodeDeploy
+
+EC2やECSを利用したデプロイを行う際に、デプロイ設定をAWS内で完結できるというメリットがあります。
+
+例では引き続き先に使用したプロジェクトとEC2インスタンスをそのまま利用することとしますが、実際のデプロイではインスタンスの立ち上げから自動化することができます。
+
+まず、前準備としてAWSの権限を設定します。
+必要な権限は以下の通り
+ - **CodeBuild、CodeDeploy、CodePipeline、aws:codestar-connections**
+	サービスの使用に前提として必要となる権限
+- **ssm:CreateAssociation on resource**
+	 複数のサービスの関連づけに必要
+- **iam:CreateRole**
+	サービスに対して他のサービスの操作を行うための権限であるサービスロールを付与するのに必要です。管理者にこれらの権限を事前にもらってください。
+
+まず、IAMのコンソールに移ってロールを作成します。
+まずはEC2用のロールを作成するので、ユースケースのなかからEC2を選択し、ポリシーの選択ではAmazonEC2RoleforAWSCodeDeployにチェックをつけて次に進んでください。タグは空欄で結構で、ロール名にはわかりやすい名前を入力してください。
+次にCodeDeployのロールを設定します。ユースケースはCodeDeploy、ポリシーはAWSCodeDeployRoleとAmazonS3FullAccessで後は同様です。
+
+次に、CodeDeployのコンソールを開いてアプリケーションの作成を選択してください。
+- **アプリケーション名**
+適当なわかりやすい名前をつけておいてください
+- **コンピューティングプラットフォーム**
+デプロイする先を選択します。今回はEC2/オンプレミスを選択します。
+
+作成したアプリケーションに対してデプロイグループを作成します。
+- **デプロイグループ名**
+わかりやすい名前。
+- **サービルロール**
+作成したCodeDeploy用のサービスロールを指定します。
+- **デプロイタイプ**
+Blue/Greenのほうがデプロイ時に中断がなくて安全ですが、ロードバランサが必要になります。今回LBは使用していないのでインプレースを指定します。
+- **環境設定**
+デプロイ先を指定します。今回はEC2ですので、EC2 Instanceを指定し、デプロイするインスタンスを指定します。
+- **エージェント設定**
+後述のエージェントを更新する頻度を設定できます。デフォルトで結構です。
+- **デプロイ設定** 
+デプロイ先のインスタンスが複数ある時に、一度にデプロイするのか段階的に行うのかの設定を行えます。今回はデプロイ先はひとつなのでAllAtOnceに指定します。
+- **Load Balance**
+ロードバランサについて設定できます。今回LBは使用しないのでロードバランシングを有効にするのチェックボックスを外します。
+
+次に、CodePipelineで新規のパイプラインを作成します。CodePipelineのコンソールから作成ページに映ってください。
+各設定は前から順に、
+ - **パイプライン名**
+	 適当なわかりやすい名前をつけておいてください。
+- **サービスロール**
+	新規サービスロールを選択しておけば自動的にロールが作成されます。
+- **ソースプロバイダー**
+	デプロイするソースコードの取得先を選択します。デフォルトではAWSのソースコード管理ツールであるCodeCommitが選択されていますが、GitHubが選択できるのでこちらに変更します。
+　GitHubに接続するボタンができるので、そこから認証し、リポジトリとブランチを選択します。
+　検出オプションは、ウェブフックにしておけば自動的にGitHub側に指定したブランチへのpushで作動するウェブフックを作成してくれるので、このままで結構です。
+- **ビルドステージのプロバイダー**
+	ビルドコンテンツを取得先を選択します。今回はCodeBuildを選択します。
+- **ビルドプロジェクト**
+	CodeBuildのビルドプロジェクトを選択します。ここではまだプロジェクトを作成していないので、プロジェクトの作成を押してください。別ウィンドウで作成画面が開きます。
+		- **プロジェクト名**
+			例によって適当なわかりやすい名前をつけておいてください。
+		 - **環境**
+			ビルド・テストの環境を設定します。OS以外は基本一番上を選択すれば大丈夫です。サービルロールも新しいロールの作成のままで大丈夫です。
+		- **buildspec.yml**
+			のちに作成しますが、ビルドの際の実行コマンドなどの設定はこのyamlに記述します。デフォルトではプロジェクトルートにあるbuildspec.ymlという名前のファイルを参照しますが、個々の設定で変更できます。今回はデフォルトです。
+		- **ログ**
+			S3、CloudWatchにログを出力できます。しなくてもログ自体は参照できるので、必要ない場合は余計な料金が発生しないようチェックを外しておきましょう。
+- **環境変数**
+	ビルドに渡す環境変数を設定できます。
+- **ビルドタイプ**
+	ビルドを複数に分割する際に使用します。今回は単一ビルドです。
+- **デプロイプロバイダー**
+	デプロイを実行するプロバイダーを選択します。今回はCodeDeployを選択し、アプリケーションとデプロイグループから先ほど作成したCodeDeployを設定します。
+
+以上が設定できたらパイプラインを作成してCodePipelineの設定は完了です。
+
+最後にEC2の設定です。まずはEC2のコンソールからアクション>セキュリティ>IAMロールを変更と進んで、先ほど作成したEC2用のロールをアタッチします。
+次に、インスタンスにSSH接続し、エージェントのインストールを行います。コマンドはUbuntuサーバーであれば以下、
+https://docs.aws.amazon.com/ja_jp/codedeploy/latest/userguide/codedeploy-agent-operations-install-ubuntu.html
+Amazon Linuxであれば以下に従ってください。
+https://docs.aws.amazon.com/ja_jp/codedeploy/latest/userguide/codedeploy-agent-operations-install-linux.html
+デフォルトではrootユーザーを使用して実行する設定になっているのですが、これによりエラーが起きることがあります。その場合は、下記の手順に従ってユーザーを切り替えてください。
+https://aws.amazon.com/jp/premiumsupport/knowledge-center/codedeploy-agent-non-root-profile/
+
+次に、プロジェクトルートにCodeBuildとDeployの処理を記述するbuildspec.ymlとappspec.ymlを作成します。Gitに入りさえすればいいのでこの作業はサーバー内でやる必要はありません。まずbuildspec.ymlには以下のように記述してください。
+```
+version:  0.2
+phases:
+	install:
+		commands:
+			- python -m pip install --upgrade pip
+			- pip install -r requirements.txt
+			- pip install black
+	build:
+		commands:
+			- black .
+			- python manage.py test --settings=intern.settings.settings
+artifacts:
+	files:
+		- "**/*"	
+	base-directory:  $CODEBUILD_SRC_DIR
+	name:  apply-artifacts
+	discard-paths:  no
+```
+- version
+CodeBuildのバージョンです。0.2が推奨されています。
+- phases
+処理を実行するシーケンスをそれぞれ記述します。install、pre-build、build、post-buildなどがあります。
+- command
+実行するコマンドを記述します。installでビルド環境に依存パッケージを導入し、buildでテストやその他必要な処理を実行するのが一般的です。
+- artifacts
+ビルドしたファイルの保存について設定します。今回の設定では自動的にS3に専用のバケットが用意されそこにアップロードされ、CodeDeployではそれを参照するようになっています。
+filesはアップロードするファイルを指定することができ、上記のように書けば全ファイルをアップロードすることになります。
+base-directoryはアップロードするディレクトリを指し、上記の環境変数はビルドしたところと同階層を指します。
+nameはartifactの名前を指定し、APIからこの処理を実行するときや、既存のartifactに対してビルドプロジェクトを作成する時に使用されます。
+discard-pathsはyesにするとビルド出力内の階層構造がなくなり、全てのファイルが出力のルートに並ぶことになります。
+
+次に、appspec.ymlは以下のようになります。
+```
+version:  0.0
+	os:  linux
+	files:
+		- source:  ./
+		destination:  /home/ubuntu/intern-aws
+	hooks:
+		BeforeInstall:
+			- location:  scripts/before.sh
+			timeout:  300
+		AfterInstall:
+			- location:  scripts/after.sh
+			timeout:  300
+```
+- version
+CodeDeployのバージョンを指定します。2021月12月現在指定できるのは0.0のみです。
+- os
+デプロイ先のOSを指定します。linuxとwindowsが指定できます。
+- files
+デプロイするディレクトリをsourceで指定し、destinationでデプロイ先の設置場所を指定します。デプロイ先とファイルがかぶっているとエラーが起きますので、今回は先程のGitHub Actionsで作成したinternディレクトリとは別にintern-awsディレクトリを作成することにします。
+- hooks
+デプロイ時の処理を指定します。BeforeInstall、AfterInstall、AfterAllowTrafficなどがあり、処理自体はここではなく別のスクリプトファイルに書き込んでそれを呼び出す形になります。同階層にscriptsディレクトリを作ってその中にスクリプトを置いておくのが通例です。
+![enter image description here](https://docs.aws.amazon.com/ja_jp/codedeploy/latest/userguide/images/lifecycle-event-order-ecs.png)
+
+最後に、呼び出すbefore.shとafter.shを作成して完了です。before.shは以下のようになります。
+```
+#!/bin/bash
+cd /home/ubuntu/intern-aws
+docker-compose down
+```
+after.shは以下のようになります。
+```
+#!/bin/bash
+cd /home/ubuntu/intern-aws
+docker-compose up --build -d
+```
+migrateやcollectstaticはコンテナ起動時に自動的に走るように設定してあるので今回はこれだけですが、コンテナを使用しない場合はそれらの処理はここで呼び出すことになります。
+
+以上でセットアップは終了ですが、このままだとGitHub Actionsも同時に走ってしまうので、workflowのデプロイのステップをコメントアウトした上で、pushしてみましょう。CodePipelineのコンソールから実行状況が確認できます。
+これ以降は、特に設定することなくpushのたびにテストが走りEC2が更新されることになります。やや煩雑に感じたかもしれませんが、実用上はIAMのロールなどは１つCI/CD用のものを作成してそれを使い回すことになるかと思いますので、実際にはもう少し手順を簡略化できるでしょう。
