@@ -90,6 +90,10 @@ LOGGING = {
 ```
 これに加えて、[ADMINS](https://docs.djangoproject.com/en/3.1/ref/settings/#admins)を設定する必要がある
 
+※テスト実行時には、メールは飛ばないことが確認されている（2022年1月現在）
+
+※グーグルアカウントのメールでは、メールが飛ばないことが確認されている（2022年1月現在）
+
 ## djangoのセキュリティチェック
 
 1. [django公式のデプロイチェックリスト](https://docs.djangoproject.com/en/3.1/howto/deployment/checklist/)
@@ -104,3 +108,5 @@ LOGGING = {
 
 すべてプロジェクト直下のtemplates直下に配置する
 
+## サイト名
+管理者画面からデフォルトで存在するサイトテーブルの値をexample.comから使用する独自ドメインに変更する。
