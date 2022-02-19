@@ -254,5 +254,7 @@ staticfilesとmediaはymlからの相対パスか絶対パスを指定してく�
 ### 2022年2月18日追記
 
 上記で紹介したのは起動までですが、数行でnginxの立ち上げからLet's Encryptによる証明書発行、SSL化まで自動でやってくれるコンテナがありましたので紹介しておきます。
+
 https://github.com/SteveLTN/https-portal
+
 大変便利でしたのでぜひ活用してください。
