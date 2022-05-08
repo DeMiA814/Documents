@@ -94,7 +94,7 @@ func GetUserByName(name string) (User, error) {
 
 このような構造体と関数を定義しているとする。
 
-まずテスト用のファイルは対象となる関数のファイル名に"\_test"と追加した名前をつける。今回は `models/user_test.go` となる。echo では単純な CRUD は実装はほぼ作業で echo が作ってくれた部分を写すだけなので動作に関しては今回は信頼している。
+まずテスト用のファイルは対象となる関数のファイル名に"\_test"と追加した名前をつける。今回は `models/user_test.go` となる。gorm では単純な CRUD は実装はほぼ作業で gorm が作ってくれた部分を写すだけなので動作に関しては今回は信頼している。
 
 #### _models/user_test.go_
 
