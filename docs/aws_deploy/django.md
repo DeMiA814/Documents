@@ -68,7 +68,7 @@ $ cd "プロジェクト名"
 ### プロジェクトのセットアップ
 
 ```console
-$ echo 'export DJANGO_SETTINGS_MODULE="プロジェクト名.settings.production"' >> .bashrc
+$ echo 'export DJANGO_SETTINGS_MODULE="プロジェクト名.settings.production"' >> ~/.bashrc
 $ exec "$SHELL"
 $ python3 -m venv .venv
 $ source .venv/bin/activate
